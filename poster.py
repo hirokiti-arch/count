@@ -6,9 +6,36 @@ TikTok 自動投稿ツール
 import os
 import time
 import argparse
+import shlex
+import subprocess
 import requests
 from pathlib import Path
 from caption_generator import generate_from_template
+
+
+def edit_with_chatcut(video_path: str) -> str:
+    """CHAT cut で動画を編集し、編集済み動画のパスを返す。
+
+    環境変数 CHATCUT_EDIT_COMMAND に編集コマンドのテンプレートを指定する。
+    {input} は入力動画、{output} は編集後の出力先に置換される。
+    例: CHATCUT_EDIT_COMMAND="chatcut edit {input} -o {output}"
+    """
+    template = os.environ.get("CHATCUT_EDIT_COMMAND")
+    if not template:
+        raise RuntimeError("CHATCUT_EDIT_COMMAND が設定されていません（.env.example 参照）")
+
+    src    = Path(video_path)
+    output = src.with_name(f"{src.stem}_edited{src.suffix}")
+    cmd    = [
+        part.format(input=str(src), output=str(output))
+        for part in shlex.split(template)
+    ]
+    print(f"[CHAT cut] 編集開始: {' '.join(cmd)}")
+    subprocess.run(cmd, check=True)
+    if not output.exists():
+        raise RuntimeError(f"CHAT cut: 編集済み動画が生成されませんでした: {output}")
+    print(f"[CHAT cut] 編集完了: {output}")
+    return str(output)
 
 
 def tiktok_post_video(video_path: str, caption: str) -> dict:
@@ -94,11 +121,15 @@ def main():
     parser = argparse.ArgumentParser(description="TikTok 自動投稿")
     parser.add_argument("video",    help="動画ファイルのパス（例: video.mp4）")
     parser.add_argument("template", help="テンプレート名（例: 復縁, 転職, ダイエット）")
+    parser.add_argument("--edit", action="store_true",
+                        help="投稿前に CHAT cut で動画を編集する")
     args = parser.parse_args()
 
     if not Path(args.video).exists():
         print(f"エラー: 動画ファイルが見つかりません: {args.video}")
         return
+
+    video = edit_with_chatcut(args.video) if args.edit else args.video
 
     caption = generate_from_template(args.template)
     print("=" * 50)
@@ -107,7 +138,7 @@ def main():
     print(caption)
     print("=" * 50)
 
-    result = tiktok_post_video(args.video, caption)
+    result = tiktok_post_video(video, caption)
     print(f"\n投稿成功: {result}")
 
 
