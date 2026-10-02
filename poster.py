@@ -4,6 +4,7 @@ TikTok 自動投稿ツール
 """
 
 import os
+import re
 import time
 import argparse
 import shlex
@@ -11,6 +12,34 @@ import subprocess
 import requests
 from pathlib import Path
 from caption_generator import generate_from_template
+
+
+def trim_leading_silence(video_path: str, noise_db: int = -35, min_silence: float = 0.2) -> str:
+    """動画冒頭の無音（間）を検出して切り落とし、トリム済み動画のパスを返す。
+
+    冒頭に無音がなければ元のパスをそのまま返す。ffmpeg が必要。
+    """
+    probe = subprocess.run(
+        ["ffmpeg", "-hide_banner", "-t", "5", "-i", video_path,
+         "-af", f"silencedetect=noise={noise_db}dB:d={min_silence}", "-f", "null", "-"],
+        capture_output=True, text=True,
+    )
+    m = re.search(r"silence_start: (-?[\d.]+)", probe.stderr)
+    e = re.search(r"silence_end: ([\d.]+)", probe.stderr)
+    if not (m and e) or float(m.group(1)) > 0.05:
+        print("[Trim] 冒頭の無音なし")
+        return video_path
+
+    start  = float(e.group(1))
+    src    = Path(video_path)
+    output = src.with_name(f"{src.stem}_trimmed{src.suffix}")
+    subprocess.run(
+        ["ffmpeg", "-y", "-hide_banner", "-loglevel", "error",
+         "-ss", f"{start:.2f}", "-i", video_path, str(output)],
+        check=True,
+    )
+    print(f"[Trim] 冒頭 {start:.2f} 秒をカット: {output}")
+    return str(output)
 
 
 def edit_with_chatcut(video_path: str) -> str:
@@ -123,6 +152,8 @@ def main():
     parser.add_argument("template", help="テンプレート名（例: 復縁, 転職, ダイエット）")
     parser.add_argument("--edit", action="store_true",
                         help="投稿前に CHAT cut で動画を編集する")
+    parser.add_argument("--trim-start", action="store_true",
+                        help="冒頭の無音（間）を自動でカットする")
     args = parser.parse_args()
 
     if not Path(args.video).exists():
@@ -130,6 +161,9 @@ def main():
         return
 
     video = edit_with_chatcut(args.video) if args.edit else args.video
+
+    if args.trim_start:
+        video = trim_leading_silence(video)
 
     caption = generate_from_template(args.template)
     print("=" * 50)
