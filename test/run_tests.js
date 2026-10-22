@@ -110,6 +110,11 @@ assert.ok(S.appsByIdx[dup]['19+'].every((x) => x === 0), '同名の2行目は0�
   assert.strictEqual(A1[nanba + 2 - 18], '1\t0', 'なんばTikTok の17歳以下（あつしThreadsの3行が無いぶん、ずれる）');
   assert.ok(A1.every((l) => /^\d+\t\d+$/.test(l)), '空白は0');
 
+  // --- --min-date（すでに入力された日は含めない）
+  const pr2 = JSON.parse(run('generate_paste_files.js', ['--date', '2026-09-29', '--min-date', '2026-09-29', '--summary', path.join(outDir, 'summary_202609.json'), '--elme-daily', path.join(tmp, 'in2', 'elme.json'), '--row-map', path.join(tmp, 'none.json'), '--output', outDir]));
+  assert.deepStrictEqual(pr2.days, [29], '--min-date より前の日は含めない');
+  assert.strictEqual(pr2.list.range, 'AD2:AD127');
+
   // --- 日報
   const rp = run('daily_report.js', ['--date', '2026-09-29', '--summary', path.join(outDir, 'summary_202609.json'), '--elme-daily', path.join(tmp, 'in2', 'elme.json'), '--output', outDir]).trim();
   const rt = fs.readFileSync(rp, 'utf8');

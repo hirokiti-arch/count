@@ -3,6 +3,8 @@
 //   node scripts/generate_paste_files.js --date 2026-09-30 [--days 2] [--summary output/summary_202609.json]
 //        [--elme-daily input/elme_daily.json] [--row-map master/sheet_row_map.json] [--output output]
 //   --date の日（当日）と、その前日の2日分（同じ月の範囲で）を、作る。
+//   --min-date YYYY-MM-DD を付けると、その日より前の日は、含めない（すでに他の人が入力した日を、上書きしないため）。10月は --min-date 2026-10-22。
+//   --min-date を省略したとき、master/paste_min_date.json（{"202610":"2026-10-22"}）があれば、その月の値を使う。
 //   elme_daily.json の形: {"2026-09-29":108,"2026-09-30":134}（エルメのその日の友だち追加数）
 //   「ー」行のリード数 ＝ エルメのその日の友だち追加数 − 名前の分かる流入元のリード数の合計
 // 出力: output/paste_YYYYMMDD_リスト.tsv、output/paste_YYYYMMDD_申込数.tsv（YYYYMMDD は当日）
@@ -50,6 +52,18 @@ function main() {
     if (dd >= 1) days.push(dd);
     else warnings.push(`${y}年${m}月の外の日（前月の最終日など）は、この月の貼り付けファイルに含めません。前月のファイルで、別に作ってください。`);
   }
+  // この日より前は、貼り付けファイルに含めない
+  let minDate = opt['min-date'];
+  if (!minDate) {
+    const mp = path.resolve(L.ROOT, 'master/paste_min_date.json');
+    if (fs.existsSync(mp)) minDate = JSON.parse(fs.readFileSync(mp, 'utf8'))[`${y}${String(m).padStart(2, '0')}`];
+  }
+  if (minDate) {
+    const keep = days.filter((x) => L.isoDate(y, m, x) >= minDate);
+    if (keep.length !== days.length) warnings.push(`${minDate} より前の日は、含めていません（すでに入力された日を、上書きしないため）。`);
+    days.length = 0; days.push(...keep);
+  }
+  if (!days.length) throw new Error('貼り付ける日が、ありません（--date と --min-date を確認してください）');
   if (days.some((x) => x > S.endDay)) warnings.push(`summary の集計は ${S.endDay}日 までです。--date の日が、それより後です。`);
 
   let elme = {};
