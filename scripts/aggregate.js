@@ -1,6 +1,7 @@
 // 流入元別申込数集計（月次）
 // 使い方:
 //   node scripts/aggregate.js <年> <月> <何日目まで> [--input input] [--output output] [--master master/流入元マスター.csv] [--elme-total 3581]
+//   マスターは、master/流入元マスター_YYYYMM.csv（その月の分）があれば、それを使う。なければ master/流入元マスター.csv（2026年9月）。
 //   エルメの友だち追加総数は、--elme-total か、環境変数 LMESSAGE_FRIEND_ADD_TOTAL で渡す（期間内、bot_id=23ZloW）。
 // 入力（input/ の中の、いちばん新しいファイル）:
 //   フォーム回答CSV（ファイル名の末尾が フォームID.csv）：176252, 178808, 202523, 205225（cp932）
@@ -89,7 +90,9 @@ function main() {
   const endDay = parseInt(pos[2], 10);
   const inputDir = path.resolve(L.ROOT, opt.input || 'input');
   const outputDir = path.resolve(L.ROOT, opt.output || 'output');
-  const masterFile = path.resolve(L.ROOT, opt.master || 'master/流入元マスター.csv');
+  // マスター：--master で指定。なければ master/流入元マスター_YYYYMM.csv（その月のもの）、それも無ければ master/流入元マスター.csv（2026年9月）
+  const monthMaster = path.resolve(L.ROOT, `master/流入元マスター_${year}${String(month).padStart(2, '0')}.csv`);
+  const masterFile = path.resolve(L.ROOT, opt.master || (fs.existsSync(monthMaster) ? monthMaster : 'master/流入元マスター.csv'));
   const elmeTotalRaw = opt['elme-total'] || process.env.LMESSAGE_FRIEND_ADD_TOTAL;
   const elmeTotal = elmeTotalRaw != null && elmeTotalRaw !== '' ? parseInt(elmeTotalRaw, 10) : null;
 

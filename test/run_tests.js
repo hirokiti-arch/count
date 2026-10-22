@@ -114,6 +114,14 @@ assert.ok(S.appsByIdx[dup]['19+'].every((x) => x === 0), '同名の2行目は0�
   const rp = run('daily_report.js', ['--date', '2026-09-29', '--summary', path.join(outDir, 'summary_202609.json'), '--elme-daily', path.join(tmp, 'in2', 'elme.json'), '--output', outDir]).trim();
   const rt = fs.readFileSync(rp, 'utf8');
   assert.ok(rt.includes('直近7日分') && rt.includes('マスターに無い流入元'));
+  // --- 10月（134流入元、あつしThreadsの3行あり）の行対応
+  const octMap = JSON.parse(fs.readFileSync(path.join(ROOT, 'master', 'sheet_row_map_202610.json'), 'utf8'));
+  const octMaster = fs.readFileSync(path.join(ROOT, 'master', '流入元_並び順_202610.txt'), 'utf8').split('\n').filter((x) => x !== '');
+  assert.strictEqual(octMap.length, 134);
+  assert.strictEqual(octMaster.length, 134);
+  assert.strictEqual(octMap[0].appRow, 18);
+  assert.strictEqual(octMap[133].listRow, 135, '10月のリストは2〜135行');
+  assert.strictEqual(octMap[133].appRow, 417, '10月の申込数の最後の組は417〜419行');
   console.log('すべてのテストに成功しました');
   fs.rmSync(tmp, { recursive: true, force: true });
 })().catch((e) => { console.error('テスト失敗:', e.message); console.error(e.stack); process.exit(1); });

@@ -57,9 +57,13 @@ function main() {
   if (fs.existsSync(elmePath)) elme = JSON.parse(fs.readFileSync(elmePath, 'utf8'));
 
   let rowMap;
-  const rmPath = path.resolve(L.ROOT, opt['row-map'] || 'master/sheet_row_map.json');
-  if (fs.existsSync(rmPath)) rowMap = JSON.parse(fs.readFileSync(rmPath, 'utf8'));
-  else rowMap = defaultRowMap(master);
+  // 行の対応表：--row-map、なければ master/sheet_row_map_YYYYMM.json（その月のスプレッドシート用）、それも無ければ、2026年9月の既定
+  const monthMap = path.resolve(L.ROOT, `master/sheet_row_map_${y}${String(m).padStart(2, '0')}.json`);
+  const rmPath = path.resolve(L.ROOT, opt['row-map'] || (fs.existsSync(monthMap) ? monthMap : 'master/sheet_row_map.json'));
+  if (fs.existsSync(rmPath)) {
+    rowMap = JSON.parse(fs.readFileSync(rmPath, 'utf8'));
+    if (rowMap.length !== master.length) warnings.push(`行の対応表(${rowMap.length}行)と、集計のマスター(${master.length}行)の数が違います。`);
+  } else rowMap = defaultRowMap(master);
 
   const dash = master.indexOf(L.DASH);
   const leadOf = (idx, day) => {
