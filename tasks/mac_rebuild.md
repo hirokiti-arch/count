@@ -2,6 +2,13 @@
 
 Windowsのパソコンが使えないので、Macで、集計スクリプトを作り直す。仕様は、CLAUDE.md の 1〜9章にある（特に9章）。
 
+## 更新（クラウドのセッションで、スクリプトは、すでに作ってある）
+- scripts/lib.js、aggregate.js、generate_paste_files.js、daily_report.js と、test/run_tests.js は、作成済み（疑似データでの動作確認は、済み）。master/流入元マスター.csv も、作成済み。
+- そのため、下の手順の 3（マスター作成）と 5・7（スクリプトを作る）は、不要。代わりに、次を行う。
+  1. `git pull origin claude/intelligent-brown-ympq1a`、`npm install`、`npm test`（成功すること）。
+  2. 手順の 4（本物のCSVの用意）→ 6（9月分の照合）へ進む。照合は、CLAUDE.md の 9-3 の数字と、10章のコマンドで行う。
+  3. 一致しない、または、エラーが出たら、止まって、差を見せる。スクリプトの修正が必要なら、修正して、`npm test` も通す。
+
 ## やること（この順で）
 1. CLAUDE.md を読んで、作り直すものを、短く、まとめる。分からない点があれば、ユーザーに聞く（推測で進めない）。
 2. 環境の準備：Node.js の確認、npm の初期化と依存パッケージ（iconv-lite、csv-parse、exceljs）の追加。入れる前に、内容を見せて、許可をもらう。

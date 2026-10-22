@@ -1,2 +1,4 @@
 input/
 output/
+node_modules/
+scripts/daily/profile/

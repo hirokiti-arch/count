@@ -149,3 +149,11 @@ Windowsのパソコンで作った scripts/aggregate.js などは、GitHubに上
 
 ### 9-6. 日報
 - output/daily_report_YYYYMMDD.txt（個人情報なし）：実行の開始・終了時刻、対象期間、前日1日分の申込件数（3区分）、当月累計、リード総数（Product_selling合計、エルメの友だち追加数、差）、マスターに無い流入元、年齢不明の人数、エラー、直近7日分の日別リード数の表（エルメ友だち追加数／Product_selling合計／ー）。
+
+## 10. 集計スクリプト（Macで再構築したもの）
+Windows版のスクリプトが使えなかったため、9章の仕様をもとに、作り直した。疑似データでの動作確認（`npm test`）は済み。本物のデータでの照合（9月の数字：19歳以上1,143／18歳136／17歳以下207／年齢不明0）は、まだ。
+- 準備：`npm install`（iconv-lite、csv-parse、exceljs）。
+- 集計：`node scripts/aggregate.js <年> <月> <何日目まで> --elme-total <エルメの友だち追加総数>` → output/流入元別申込数集計_YYYY年M月.xlsx と output/summary_YYYYMM.json。input/ の中の、いちばん新しい、フォーム回答CSV（ファイル名の末尾が フォームID.csv）と Product_selling*.csv を読む。
+- 貼り付けファイル：`node scripts/generate_paste_files.js --date YYYY-MM-DD --elme-daily input/elme_daily.json` → output/paste_YYYYMMDD_リスト.tsv、output/paste_YYYYMMDD_申込数.tsv（当日と前日の2日分）。elme_daily.json は `{"2026-09-29":108,...}`（エルメのその日の友だち追加数）。行の対応は、既定では、あつしThreadsの3行が無い前提（9-5）。実際のシートと違えば、master/sheet_row_map.json（`[{idx,name,listRow,appRow}]` の配列）で上書きする。
+- 日報：`node scripts/daily_report.js --date YYYY-MM-DD`。
+- 年齢の判定は、ヘッダー行から「年齢」「職業」の列を探す。読めなければ、性別の回答の近くを探す。それでも読めなければ、職業が「学生」以外なら19歳以上、そうでなければ年齢不明。
